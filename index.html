@@ -1,0 +1,574 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nightfall</title>
+  <meta name="description" content="A focused, dark-mode incremental game you can play for hours or days. Single-page, clean UI." />
+  <style>
+    :root {
+      --bg: #0d1117;      /* GitHub dark theme base */
+      --bg2: #161b22;
+      --fg: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-2: #7ee787; /* green */
+      --danger: #ff7b72;
+      --shadow: rgba(0,0,0,0.4);
+      --card-radius: 14px;
+      --gap: 18px;
+      --font: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 800px at 50% 0%, #0b0f14 0%, var(--bg) 60%);
+      color: var(--fg);
+      font-family: var(--font);
+      display: grid;
+      place-items: center;
+    }
+    .app {
+      width: min(980px, 92vw);
+      background: linear-gradient(180deg, var(--bg2), #12161c);
+      border: 1px solid #1f252e;
+      border-radius: var(--card-radius);
+      box-shadow: 0 20px 60px var(--shadow);
+      padding: 28px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: var(--gap);
+      margin-bottom: 14px;
+    }
+    .title {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      font-size: clamp(22px, 4vw, 32px);
+    }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    .statbar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+      margin: 18px 0 24px;
+    }
+    .card {
+      background: #11161d;
+      border: 1px solid #1e2430;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .stat .label { color: var(--muted); font-size: 12px; }
+    .stat .value { font-size: 20px; font-weight: 600; }
+
+    .center {
+      display: grid;
+      place-items: center;
+      margin: 10px 0 24px;
+    }
+    .big-btn {
+      --btn-bg: #0f1622;
+      --btn-border: #243043;
+      --btn-hover: #182135;
+      appearance: none;
+      border: 1px solid var(--btn-border);
+      background: radial-gradient(400px 200px at 50% -40%, #0b1624 0%, var(--btn-bg) 40%);
+      color: var(--fg);
+      border-radius: 16px;
+      font-size: clamp(18px, 5vw, 24px);
+      font-weight: 700;
+      padding: 18px 26px;
+      min-width: min(640px, 88vw);
+      cursor: pointer;
+      box-shadow: 0 12px 22px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+      transition: transform 60ms ease, background 120ms ease, box-shadow 200ms ease;
+    }
+    .big-btn:hover { background: var(--btn-hover); transform: translateY(-1px); }
+    .big-btn:active { transform: translateY(1px); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--gap);
+    }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+    .panel-title { font-weight: 600; margin-bottom: 8px; }
+    .row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 8px 0; }
+    .name { font-weight: 600; }
+    .desc { color: var(--muted); font-size: 12px; }
+    .btn {
+      border: 1px solid #2a3342;
+      background: #0e1420;
+      color: var(--fg);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease, transform 60ms ease;
+    }
+    .btn:hover { background: #152033; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pill { color: var(--accent); font-weight: 700; }
+
+    .accent { color: var(--accent); }
+    .green { color: var(--accent-2); }
+    .danger { color: var(--danger); }
+
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+    .tab-btn { padding: 10px 12px; border-radius: 10px; border: 1px solid #1f2633; background: #0d1320; color: var(--muted); cursor: pointer; }
+    .tab-btn.active { color: var(--fg); background: #142033; border-color: #263347; }
+
+    .tab-content { margin-top: 10px; }
+
+    .ach-list { display: grid; gap: 8px; }
+    .ach { border: 1px dashed #294057; background: #0c141e; border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .ach.done { border-style: solid; background: #0e1c14; }
+
+    footer { margin-top: 18px; color: var(--muted); font-size: 12px; display:flex; justify-content:space-between; align-items:center; }
+
+    .toast {
+      position: fixed; inset: auto 20px 20px auto; background: #111a23; border: 1px solid #263347; color: var(--fg);
+      border-radius: 12px; padding: 10px 12px; box-shadow: 0 10px 24px var(--shadow); min-width: 240px; display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Nightfall Incremental">
+    <header>
+      <div>
+        <div class="title">🌙 Nightfall Incremental</div>
+        <div class="subtitle">A focused, dark-mode idle game. Click to collect <span class="accent">Shards</span>, buy generators, and ascend to gain <span class="green">Essence</span>.</div>
+      </div>
+      <div class="subtitle" id="clock">--:--</div>
+    </header>
+
+    <section class="statbar">
+      <div class="card stat"><div class="label">Shards</div><div class="value" id="shards">0</div></div>
+      <div class="card stat"><div class="label">Rate</div><div class="value" id="rate">0 / sec</div></div>
+      <div class="card stat"><div class="label">Essence (multiplier)</div><div class="value" id="essence">0 (x1.00)</div></div>
+    </section>
+
+    <div class="center">
+      <button class="big-btn" id="collectBtn" aria-label="Collect shards">Collect ✦</button>
+      <div class="subtitle" id="critHint" aria-live="polite" style="margin-top:8px"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="panel-title">Generators</div>
+        <div id="generators"></div>
+      </div>
+      <div class="card">
+        <div class="panel-title">Upgrades</div>
+        <div id="upgrades"></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="prestige">Prestige</button>
+      <button class="tab-btn" data-tab="achievements">Achievements</button>
+      <button class="tab-btn" data-tab="data">Save / Import</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </div>
+    <div class="tab-content">
+      <div id="tab-prestige" class="card">
+        <div class="panel-title">Ascend & Reset</div>
+        <p class="subtitle">Ascend resets Shards, Generators, and Upgrades but grants <span class="green">Essence</span> that boosts all production permanently.</p>
+        <div class="row">
+          <div>
+            <div class="name">Ascend</div>
+            <div class="desc">Gain <span class="pill" id="essenceGain">0</span> Essence now.</div>
+          </div>
+          <button class="btn" id="ascendBtn">Ascend</button>
+        </div>
+      </div>
+      <div id="tab-achievements" class="card" style="display:none">
+        <div class="panel-title">Milestones</div>
+        <div class="ach-list" id="achList"></div>
+      </div>
+      <div id="tab-data" class="card" style="display:none">
+        <div class="panel-title">Data</div>
+        <div class="row">
+          <div>
+            <div class="name">Export Save</div>
+            <div class="desc">Copy your save file as text (keep it safe!).</div>
+          </div>
+          <button class="btn" id="exportBtn">Export</button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="name">Import Save</div>
+            <div class="desc">Paste your text to load your progress.</div>
+          </div>
+          <button class="btn" id="importBtn">Import</button>
+        </div>
+        <textarea id="saveArea" rows="5" style="width:100%; margin-top:10px; background:#0d1320; color:var(--fg); border:1px solid #263347; border-radius:10px; padding:10px"></textarea>
+        <div class="row">
+          <div>
+            <div class="name danger">Hard Reset</div>
+            <div class="desc">Delete all progress (cannot be undone!).</div>
+          </div>
+          <button class="btn" id="wipeBtn">Wipe</button>
+        </div>
+      </div>
+      <div id="tab-settings" class="card" style="display:none">
+        <div class="panel-title">Settings</div>
+        <div class="row">
+          <div>
+            <div class="name">Animations</div>
+            <div class="desc">Toggle subtle UI animations.</div>
+          </div>
+          <button class="btn" id="animBtn">On</button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="name">Number format</div>
+            <div class="desc">Switch between short (1.2K) and full (1,234).</div>
+          </div>
+          <button class="btn" id="fmtBtn">Short</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div>Tip: Keep the tab open to accumulate shards. Ascend regularly to accelerate growth.</div>
+      <div id="saveStatus">Saved · —</div>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ===== Utilities =====
+    const el = (id) => document.getElementById(id);
+    const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+
+    const fmtShort = (n) => {
+      if (n < 1000) return n.toLocaleString();
+      const units = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+      let i = 0; let x = n;
+      while (x >= 1000 && i < units.length-1) { x /= 1000; i++; }
+      return (Math.floor(x * 100) / 100).toFixed(x < 10 ? 2 : 1) + units[i];
+    };
+    const fmtFull = (n) => n.toLocaleString();
+
+    // ===== Game State =====
+    const defaultState = () => ({
+      version: 1,
+      shards: 0,
+      total: 0,
+      essence: 0,
+      perClickBase: 1,
+      perClickMult: 1,
+      critChance: 0.06,
+      critMult: 2.2,
+      generators: [
+        { key: 'cursor', name: 'Cursor', desc: 'Clicks for you.', baseRate: 0.2, baseCost: 15, costMult: 1.15, level: 0 },
+        { key: 'drone', name: 'Drone', desc: 'Collects steadily.', baseRate: 1.2, baseCost: 120, costMult: 1.15, level: 0 },
+        { key: 'forge', name: 'Forge', desc: 'Forging shards rapidly.', baseRate: 6, baseCost: 1200, costMult: 1.15, level: 0 },
+        { key: 'matrix', name: 'Matrix', desc: 'Parallel production.', baseRate: 28, baseCost: 6500, costMult: 1.15, level: 0 }
+      ],
+      upgrades: [
+        { key: 'click+', name: 'Click Power', desc: '+1 base per click', baseCost: 10, costMult: 1.18, level: 0 },
+        { key: 'mult+', name: 'Multiplier', desc: '+10% click multiplier', baseCost: 30, costMult: 1.22, level: 0 },
+        { key: 'eff', name: 'Efficiency', desc: '+6% generator output', baseCost: 50, costMult: 1.2, level: 0 },
+        { key: 'crit', name: 'Critical Chance', desc: '+1% crit chance', baseCost: 80, costMult: 1.24, level: 0 }
+      ],
+      settings: { animations: true, shortNumbers: true },
+      lastSave: Date.now(),
+      lastTick: Date.now(),
+      ach: {}
+    });
+
+    let S = load() || defaultState();
+
+    // ===== Math =====
+    const essenceMult = () => 1 + S.essence * 0.15; // each essence = +15% boost
+    const upgradeCost = (u) => Math.floor(u.baseCost * Math.pow(u.costMult, u.level));
+    const genCost = (g) => Math.floor(g.baseCost * Math.pow(g.costMult, g.level));
+    const genRate = (g) => g.level * g.baseRate * (1 + S.upgrades[2].level * 0.06) * essenceMult();
+    const clickValue = () => (S.perClickBase + S.upgrades[0].level) * (S.perClickMult * (1 + S.upgrades[1].level * 0.10)) * essenceMult();
+
+    const totalRate = () => S.generators.reduce((a,g) => a + genRate(g), 0);
+
+    const fmt = (n) => S.settings.shortNumbers ? fmtShort(n) : fmtFull(n);
+
+    // ===== UI Render =====
+    function renderStats(){
+      el('shards').textContent = fmt(Math.floor(S.shards));
+      el('rate').textContent = `${fmt(totalRate())} / sec`;
+      el('essence').textContent = `${fmt(S.essence)} (x${(essenceMult()).toFixed(2)})`;
+      el('essenceGain').textContent = fmt(calcEssenceGain());
+    }
+
+    function renderGenerators(){
+      const wrap = el('generators');
+      wrap.innerHTML = '';
+      S.generators.forEach(g => {
+        const cost = genCost(g);
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div>
+            <div class=\"name\">${g.name} <span class=\"subtitle\">Lv ${g.level}</span></div>
+            <div class=\"desc\">${g.desc} · +${fmt(g.baseRate)} / unit</div>
+          </div>
+          <div class=\"subtitle\">Cost: <span class=\"pill\">${fmt(cost)}</span></div>
+          <button class=\"btn\" ${S.shards < cost ? 'disabled' : ''} data-k=\"${g.key}\">Buy</button>
+        `;
+        row.querySelector('button').addEventListener('click', () => buyGenerator(g.key));
+        wrap.appendChild(row);
+      });
+    }
+
+    function renderUpgrades(){
+      const wrap = el('upgrades');
+      wrap.innerHTML = '';
+      S.upgrades.forEach(u => {
+        const cost = upgradeCost(u);
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div>
+            <div class=\"name\">${u.name} <span class=\"subtitle\">Lv ${u.level}</span></div>
+            <div class=\"desc\">${u.desc}</div>
+          </div>
+          <div class=\"subtitle\">Cost: <span class=\"pill\">${fmt(cost)}</span></div>
+          <button class=\"btn\" ${S.shards < cost ? 'disabled' : ''} data-k=\"${u.key}\">Buy</button>
+        `;
+        row.querySelector('button').addEventListener('click', () => buyUpgrade(u.key));
+        wrap.appendChild(row);
+      });
+    }
+
+    function toast(msg){
+      const t = el('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      t.style.opacity = '1';
+      setTimeout(() => {
+        if (!S.settings.animations) { t.style.display = 'none'; return; }
+        t.style.transition = 'opacity 400ms ease';
+        t.style.opacity = '0';
+        setTimeout(() => { t.style.display = 'none'; t.style.transition = ''; }, 420);
+      }, 1400);
+    }
+
+    // ===== Logic =====
+    function collect(){
+      let v = clickValue();
+      const isCrit = Math.random() < S.critChance + S.upgrades[3].level * 0.01;
+      if (isCrit) v *= S.critMult;
+      S.shards += v;
+      S.total += v;
+      if (isCrit) { el('critHint').textContent = `Critical! +${fmt(Math.floor(v))}`; }
+      else { el('critHint').textContent = `+${fmt(Math.floor(v))}`; }
+      checkAchievements();
+      renderStats();
+      renderGenerators();
+      renderUpgrades();
+    }
+
+    function buyGenerator(key){
+      const g = S.generators.find(x => x.key === key);
+      const cost = genCost(g);
+      if (S.shards >= cost){
+        S.shards -= cost;
+        g.level++;
+        renderStats();
+        renderGenerators();
+        checkAchievements();
+      }
+    }
+
+    function buyUpgrade(key){
+      const u = S.upgrades.find(x => x.key === key);
+      const cost = upgradeCost(u);
+      if (S.shards >= cost){
+        S.shards -= cost;
+        u.level++;
+        renderStats();
+        renderUpgrades();
+        checkAchievements();
+      }
+    }
+
+    function tick(){
+      const now = Date.now();
+      const dt = (now - S.lastTick) / 1000; // seconds
+      S.lastTick = now;
+      const rate = totalRate();
+      const gained = rate * dt;
+      if (gained > 0){
+        S.shards += gained;
+        S.total += gained;
+      }
+      renderStats();
+      // occasional autosave
+      if (now - S.lastSave > 10000) save();
+    }
+
+    function calcEssenceGain(){
+      // Soft prestige curve: sqrt(total / 100k)
+      return Math.floor(Math.sqrt(S.total / 100000));
+    }
+
+    function ascend(){
+      const gain = calcEssenceGain();
+      if (gain <= 0) { toast('Not enough progress to ascend yet.'); return; }
+      S.essence += gain;
+      // reset shards, gens, upgrades
+      S.shards = 0; S.total = 0;
+      S.generators.forEach(g => g.level = 0);
+      S.upgrades.forEach(u => u.level = 0);
+      toast(`Ascended! Essence +${gain}`);
+      renderStats();
+      renderGenerators();
+      renderUpgrades();
+    }
+
+    // ===== Achievements =====
+    const ACH = [
+      { key:'a1', name:'First Steps', desc:'Reach 100 shards', cond: () => S.total >= 100 },
+      { key:'a2', name:'Momentum', desc:'Reach 1K shards', cond: () => S.total >= 1000 },
+      { key:'a3', name:'Surge', desc:'Reach 10K shards', cond: () => S.total >= 10000 },
+      { key:'a4', name:'Flow State', desc:'Reach 100K shards', cond: () => S.total >= 100000 },
+      { key:'a5', name:'Automation', desc:'Own 10 generators total', cond: () => S.generators.reduce((a,g)=>a+g.level,0) >= 10 },
+      { key:'a6', name:'Refined', desc:'Ascend once', cond: () => S.essence >= 1 },
+      { key:'a7', name:'Essence Collector', desc:'Reach 10 Essence', cond: () => S.essence >= 10 },
+      { key:'a8', name:'Night Architect', desc:'Reach 1M total shards', cond: () => S.total >= 1_000_000 }
+    ];
+
+    function renderAchievements(){
+      const wrap = el('achList');
+      wrap.innerHTML = '';
+      ACH.forEach(a => {
+        const done = !!S.ach[a.key];
+        const div = document.createElement('div');
+        div.className = 'ach' + (done ? ' done' : '');
+        div.innerHTML = `<div><div class=\"name\">${a.name}</div><div class=\"desc\">${a.desc}</div></div><div>${done ? '✅' : '⬜'}</div>`;
+        wrap.appendChild(div);
+      });
+    }
+
+    function checkAchievements(){
+      ACH.forEach(a => {
+        if (!S.ach[a.key] && a.cond()){
+          S.ach[a.key] = 1;
+          renderAchievements();
+          toast(`Achievement: ${a.name}`);
+        }
+      });
+    }
+
+    // ===== Save / Load =====
+    const KEY = 'nightfall.v1';
+    function save(){
+      S.lastSave = Date.now();
+      localStorage.setItem(KEY, JSON.stringify(S));
+      el('saveStatus').textContent = 'Saved · ' + new Date(S.lastSave).toLocaleTimeString();
+    }
+    function load(){
+      try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; }
+    }
+
+    function applyOfflineProgress(){
+      const saved = load();
+      if (!saved || !saved.lastSave) return;
+      const dt = (Date.now() - saved.lastSave) / 1000;
+      if (dt < 5) return; // ignore tiny pauses
+      // approximate production based on saved rate at time of save
+      // we recompute current rate for fairness
+      let rate = 0;
+      (saved.generators || []).forEach(g => {
+        const effLvl = (saved.upgrades || [])[2]?.level || 0;
+        const es = saved.essence || 0;
+        rate += g.level * g.baseRate * (1 + effLvl * 0.06) * (1 + es * 0.15);
+      });
+      const gained = rate * dt;
+      S.shards += gained;
+      S.total += gained;
+      toast(`Offline progress: +${fmt(Math.floor(gained))} shards in ${Math.floor(dt/60)}m`);
+    }
+
+    // ===== Tabs =====
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        ['prestige','achievements','data','settings'].forEach(id => {
+          el('tab-' + id).style.display = (id === tab) ? 'block' : 'none';
+        });
+      });
+    });
+
+    // ===== Events =====
+    el('collectBtn').addEventListener('click', collect);
+    el('ascendBtn').addEventListener('click', ascend);
+    el('exportBtn').addEventListener('click', () => {
+      el('saveArea').value = JSON.stringify(S);
+      el('saveArea').focus(); el('saveArea').select();
+      toast('Save exported to text area. Copy it!');
+    });
+    el('importBtn').addEventListener('click', () => {
+      try {
+        const data = JSON.parse(el('saveArea').value.trim());
+        if (!data || !data.version) throw new Error('Invalid save');
+        localStorage.setItem(KEY, JSON.stringify(data));
+        S = load() || defaultState();
+        renderAll();
+        toast('Save imported!');
+      } catch(e){ toast('Import failed. Paste a valid JSON save.'); }
+    });
+    el('wipeBtn').addEventListener('click', () => {
+      if (!confirm('Type OK to confirm wipe')) return;
+      localStorage.removeItem(KEY);
+      S = defaultState();
+      renderAll();
+      toast('Progress wiped.');
+    });
+    el('animBtn').addEventListener('click', () => {
+      S.settings.animations = !S.settings.animations;
+      el('animBtn').textContent = S.settings.animations ? 'On' : 'Off';
+      save();
+    });
+    el('fmtBtn').addEventListener('click', () => {
+      S.settings.shortNumbers = !S.settings.shortNumbers;
+      el('fmtBtn').textContent = S.settings.shortNumbers ? 'Short' : 'Full';
+      renderStats();
+      renderGenerators();
+      renderUpgrades();
+      save();
+    });
+
+    // ===== Render All =====
+    function renderAll(){
+      renderStats();
+      renderGenerators();
+      renderUpgrades();
+      renderAchievements();
+    }
+
+    // ===== Clock =====
+    function renderClock(){
+      const d = new Date();
+      el('clock').textContent = d.toLocaleTimeString();
+    }
+
+    // ===== Init =====
+    applyOfflineProgress();
+    renderAll();
+    setInterval(tick, 80);
+    setInterval(save, 20000);
+    setInterval(renderClock, 1000);
+
+  </script>
+</body>
+</html>
